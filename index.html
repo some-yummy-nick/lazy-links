@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Title</title>
+</head>
+<body>
+<style>
+	.screen {
+		height: 100vh;
+	}
+</style>
+<div class="screen">
+	<h1>Basic demo</h1>
+	<a href="test/1.html">Link 1</a> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+	ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+	<a href="test/2.html">Link 2</a>
+</div>
+<div class="screen">
+	Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eos, quos?
+	<a href="test/3.html">Link 3</a>
+	<section id="stuff">
+		<a href="test/main.css">CSS</a>
+	</section>
+</div>
+<div class="screen">
+	<a href="test/4.html">Link 4</a>
+</div>
+
+<script>
+	/** The IntersectionObserver API is instantiated */
+	const observer = new IntersectionObserver(entries => {
+		entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				const url = entry.target.href;
+				//log(url)
+				prefetcher(url)
+			}
+		});
+	});
+
+	/** prefetches a resource */
+	function prefetcher(url) {
+		url = new URL(url, location.href)
+		if(conn = navigator.connection) {
+			if(conn.effectiveType.includes('2g') || conn.saveData) return
+		}
+		return (supportedPrefetchStrategy)(url).then(() => {
+			console.log(` ${url} prefetched`)
+		}, () => {
+			console.log(`${url} not prefetched`)
+		});
+	};
+
+	/** prefetches a resource by using link[rel="prefetch"]
+	 * It creates a link element and appends attributes: rel="prefetch" and href with the url param as the value.
+	 */
+	function linkPrefetchStrategy(url) {
+		return new Promise((resolve, reject) => {
+			const link = document.createElement(`link`);
+			link.rel = `prefetch`;
+			link.href = url;
+			link.onload = resolve;
+			link.onerror = reject;
+			document.head.appendChild(link);
+		});
+	};
+	/** prefetches a resource using XHR */
+	function xhrPrefetchStrategy(url) {
+		return new Promise((resolve, reject) => {
+			const req = new XMLHttpRequest();
+			req.open(`GET`, url, req.withCredentials=true);
+			req.onload = () => {
+				(req.status === 200) ? resolve() : reject();
+			};
+			req.send();
+		});
+	}
+	/** checks if your machine supports prefetching using link[rel="prefetch"] */
+	function support(feature) {
+		const link = document.createElement('link');
+		return (link.relList || {}).supports && link.relList.supports(feature);
+	}
+	/** Holds the prefetching strategy */
+	const supportedPrefetchStrategy = support('prefetch') ? linkPrefetchStrategy : xhrPrefetchStrategy;
+	(function(options) {
+		requestIdleCallback(() => {
+			Array.from(document.querySelectorAll('a'), link => {
+				observer.observe(link);
+			});
+		}, {
+			timeout: 23
+		});
+	})()
+
+</script>
+</body>
+</html>
